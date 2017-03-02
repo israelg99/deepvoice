@@ -99,3 +99,5 @@ The frequency predictor predicts whether a phoneme is voiced. If it is, the mode
 
 ### Architecture
 The architecture is based on [WaveNet](https://github.com/basveeling/wavenet) but with some changes.
+
+***Will be updated soon.***
