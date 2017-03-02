@@ -1,4 +1,4 @@
-# Deep Voice *Handbook*
+# Deep Voice
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
 Deep Voice is a text-to-speech system based entirely on deep neural networks.
