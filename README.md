@@ -1,4 +1,6 @@
 # Deep Voice
+
+[![Join the chat at https://gitter.im/deep-voice/Lobby](https://badges.gitter.im/deep-voice/Lobby.svg)](https://gitter.im/deep-voice/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
 Deep Voice is a text-to-speech system based entirely on deep neural networks.
