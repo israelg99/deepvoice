@@ -24,9 +24,9 @@ def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/mast
         max_chars: restrict data to this <=max_charectors
         blacklist: remove words with these charectors e.g. HOUSE(2) for the second varient of house
     # Example
-        (X_train, _), (X_test, ), (xtable, ytable) = get_cmudict(
+        (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(
             verbose=1,
-            test_size=0.33
+            test_size=0.
         )
 
         [''.join(i) for i in xtable.decode(X_train[:5])]
