@@ -113,6 +113,6 @@ logs
 *.png
 
 # Data
-data/
+/data/
 *.npy
 *.wav
