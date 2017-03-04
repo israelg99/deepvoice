@@ -24,6 +24,7 @@ def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/mast
         max_chars: restrict data to this <=max_charectors
         blacklist: remove words with these charectors e.g. HOUSE(2) for the second varient of house
     # Example
+        ```
         (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(
             verbose=1,
             test_size=0.
@@ -31,6 +32,7 @@ def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/mast
 
         [''.join(i) for i in xtable.decode(X_train[:5])]
         [''.join(i) for i in ytable.decode(y_train[:5])]
+        ```
     """
 
     cmudict_path = get_file("cmudict-py", origin=origin, untar=False)
@@ -76,7 +78,7 @@ def _encode_chartable(train, test, maxlen=None):
     load = train
 
     test_empty = len(test) == 0
-    if not test_empty:  load += test
+    if not test_empty: load = test + train
 
     table = CharacterTable()
     table.fit(load)
@@ -84,3 +86,28 @@ def _encode_chartable(train, test, maxlen=None):
     if maxlen: table.maxlen = maxlen
 
     return table, table.encode(train), np.empty(0) if test_empty else table.encode(test)
+
+def test_dataset_cmudict():
+    (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict()
+
+    # lengths
+    assert len(X_train) > 0
+    assert len(X_test) > 0
+    assert len(X_train) == len(y_train)
+    assert len(X_test) == len(y_test)
+
+    # should be one-hot
+    assert len(X_train.shape) == 3, 'should be one-hot'
+    assert len(y_train.shape) == 3, 'should be one-hot'
+    assert y_test.reshape((-1, y_test.shape[-1])).sum(-1).all(), 'should be one-hot'
+    assert X_test.reshape((-1, X_test.shape[-1])).sum(-1).all(), 'should be one-hot'
+    assert y_train.reshape((-1, y_train.shape[-1])).sum(-1).all(), 'should be one-hot'
+    assert X_train.reshape((-1, X_train.shape[-1])).sum(-1).all(), 'should be one-hot'
+
+    dx_train = [' '.join(xx) for xx in xtable.decode(X_train)]
+    dx_test = [' '.join(xx) for xx in xtable.decode(X_test)]
+    x = dx_train + dx_test
+    assert len(x) == len(set(x)), 'should be no overlap between test and train'
+
+    (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(test_size=0)
+    assert X_test.size == 0 and y_test.size == 0, 'When test size is 0, test data must be empty.'
