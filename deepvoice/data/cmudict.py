@@ -16,13 +16,21 @@ def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/mast
         (xtable, ytable): Charecter en/decoding tables
     # Arguments
         seed: random seed for data split and shuffle
-        test_size: fraction of data to set aside for testing
+        test_size: fraction of data to set aside for testing, 0 will return empty test data.
         verbose: print messages about data processing
         maxlen_x: crop and pad grapheme sequences to this length
         maxlen_y: crop and pad phoneme sequences to this length
         max_phonemes: restrict data to this <=max_phonemes
         max_chars: restrict data to this <=max_charectors
         blacklist: remove words with these charectors e.g. HOUSE(2) for the second varient of house
+    # Example
+        (X_train, _), (X_test, ), (xtable, ytable) = get_cmudict(
+            verbose=1,
+            test_size=0.33
+        )
+
+        [''.join(i) for i in xtable.decode(X_train[:5])]
+        [''.join(i) for i in ytable.decode(y_train[:5])]
     """
 
     cmudict_path = get_file("cmudict-py", origin=origin, untar=False)
