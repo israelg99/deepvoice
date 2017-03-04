@@ -5,7 +5,7 @@ import re
 from keras.utils.data_utils import get_file
 from sklearn.model_selection import train_test_split
 
-from deepvoice.util.data_util import CharacterTable
+from deepvoice.data.character_table import CharacterTable
 
 def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/master/cmudict.dict', test_size=0.33, verbose=False, maxlen_x=None, maxlen_y=None, blacklist='().0123456789', max_phonemes=np.inf, max_chars=np.inf, seed=42):
     """
