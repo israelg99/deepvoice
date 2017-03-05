@@ -109,6 +109,11 @@ def test_dataset_cmudict():
     x = dx_train + dx_test
     assert len(x) == len(set(x)), 'should be no overlap between test and train'
 
+    assert X_train.shape[0] == y_train.shape[0]
+    rand_samples = np.random.randint(X_train.shape[0], size=5)
+    print([''.join(i) for i in xtable.decode(X_train[rand_samples])])
+    print([''.join(i) for i in ytable.decode(y_train[rand_samples])])
+
     (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(test_size=0)
     assert X_test.size == 0 and y_test.size == 0, 'When test size is 0, test data must be empty.'
 
