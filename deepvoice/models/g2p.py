@@ -1,4 +1,3 @@
-#%% Import.
 import numpy as np
 
 from keras.models import Sequential
@@ -9,58 +8,59 @@ from keras.utils.visualize_util import plot
 from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
 
-#%% Test CMUDict.
-test_dataset_cmudict()
+def G2P(layers, tables, RNN=GRU, build=True):
+    nb_chars = len(tables[0].chars)
+    nb_phons = len(tables[1].chars)
+    word_length = tables[0].maxlen
+    phon_length = tables[1].maxlen
 
-#%% Get CMUDict data.
-(X_train, y_train), (_, _), (xtable, ytable) = get_cmudict(
-    verbose=1,
-    test_size=0.
-)
+    model = Sequential()
 
-# Sparse labels.
-y_train = sparse_labels(y_train)
+    model.add(InputLayer((word_length, nb_chars)))
 
-#%% Examine features and labels (check if they are aligned).
-rand_samples = np.random.randint(X_train.shape[0], size=5)
-[''.join(i) for i in xtable.decode(X_train[rand_samples])]
-[''.join(i) for i in ytable.decode(y_train[rand_samples])]
+    for _ in range(layers):
+        model.add(Bidirectional(RNN(nb_phons, return_sequences=True, consume_less='gpu')))
 
-#%% Assign data-dependent model config.
-nb_chars = len(xtable.chars)
-nb_phons = len(ytable.chars)
-word_length = xtable.maxlen
-phon_length = ytable.maxlen
+    for _ in range(layers):
+        model.add(RNN(nb_phons, return_sequences=True, consume_less='gpu'))
 
-#%% Define model config.
-RNN=GRU
-LAYERS = 3
+    model.add(TimeDistributed(Dense(nb_phons)))
+    model.add(Activation('softmax'))
 
-#%% Define training config.
-batch_size = 100
-epochs = 20
+    if build:
+        model.compile(loss='sparse_categorical_crossentropy',
+                    optimizer=Nadam(),
+                    metrics=['accuracy'])
 
-#%% Define model.
-model = Sequential()
+    return model
 
-model.add(InputLayer((word_length, nb_chars)))
+def test_fit_G2P():
+    #%% Test CMUDict.
+    test_dataset_cmudict()
 
-for _ in range(LAYERS):
-    model.add(Bidirectional(RNN(nb_phons, return_sequences=True, consume_less='gpu')))
+    #%% Get CMUDict data.
+    (X_train, y_train), (_, _), (xtable, ytable) = get_cmudict(
+        verbose=1,
+        test_size=0.
+    )
 
-for _ in range(LAYERS):
-    model.add(RNN(nb_phons, return_sequences=True, consume_less='gpu'))
+    #%% Examine features and labels (check if they are aligned).
+    assert X_train.shape[0] == y_train.shape[0]
+    rand_samples = np.random.randint(X_train.shape[0], size=5)
+    print([''.join(i) for i in xtable.decode(X_train[rand_samples])])
+    print([''.join(i) for i in ytable.decode(y_train[rand_samples])])
 
-model.add(TimeDistributed(Dense(nb_phons)))
-model.add(Activation('softmax'))
+    # Sparse labels.
+    y_train = sparse_labels(y_train)
 
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer=Nadam(),
-              metrics=['accuracy'])
+    # Define model.
+    model = G2P(3, (xtable, ytable), GRU, True)
 
-#%% Summerize and plot model.
-model.summary()
-plot(model)
+    #%% Summerize and plot model.
+    model.summary()
+    plot(model)
 
-#%% Fit model.
-model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=epochs, verbose=1)
+    #%% Fit model.
+    model.fit(X_train, y_train, batch_size=128, nb_epoch=20, verbose=1)
+
+test_fit_G2P()
