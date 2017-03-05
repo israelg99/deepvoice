@@ -63,4 +63,5 @@ def test_fit_G2P():
     #%% Fit model.
     model.fit(X_train, y_train, batch_size=128, nb_epoch=20, verbose=1)
 
-test_fit_G2P()
+if __name__ == "__main__":
+    test_fit_G2P()
