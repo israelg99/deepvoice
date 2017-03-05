@@ -9,6 +9,9 @@ from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
 
 def G2P(layers, tables, RNN=GRU, build=True):
+    # TODO: Teacher-forcing.
+    # TODO: Beam search.
+
     nb_chars = len(tables[0].chars)
     nb_phons = len(tables[1].chars)
     word_length = tables[0].maxlen
