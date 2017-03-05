@@ -51,7 +51,7 @@ The segmentation model uses the convolutional recurrent neural network based on 
 
 1. Audio vector.
 2. 20 MFCCs with 10ms stride.
-2. Double 2D convolutions (frequency bins ***** time).
+2. Double 2D convolutions (frequency bins * time).
 3. Triple bidirectional recurrent GRUs.
 4. Softmax.
 5. Output sequence of pairs.
