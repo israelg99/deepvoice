@@ -90,30 +90,33 @@ def _encode_chartable(train, test, maxlen=None):
 def test_dataset_cmudict():
     (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict()
 
-    # lengths
+    # Assert lengths.
     assert len(X_train) > 0
     assert len(X_test) > 0
     assert len(X_train) == len(y_train)
     assert len(X_test) == len(y_test)
 
-    # should be one-hot
-    assert len(X_train.shape) == 3, 'should be one-hot'
-    assert len(y_train.shape) == 3, 'should be one-hot'
-    assert y_test.reshape((-1, y_test.shape[-1])).sum(-1).all(), 'should be one-hot'
-    assert X_test.reshape((-1, X_test.shape[-1])).sum(-1).all(), 'should be one-hot'
-    assert y_train.reshape((-1, y_train.shape[-1])).sum(-1).all(), 'should be one-hot'
-    assert X_train.reshape((-1, X_train.shape[-1])).sum(-1).all(), 'should be one-hot'
+    # Assert one-hot vectors.
+    assert len(X_train.shape) == 3, 'Should be one-hot'
+    assert len(y_train.shape) == 3, 'Should be one-hot'
+    assert y_test.reshape((-1, y_test.shape[-1])).sum(-1).all(), 'Should be one-hot'
+    assert X_test.reshape((-1, X_test.shape[-1])).sum(-1).all(), 'Should be one-hot'
+    assert y_train.reshape((-1, y_train.shape[-1])).sum(-1).all(), 'Should be one-hot'
+    assert X_train.reshape((-1, X_train.shape[-1])).sum(-1).all(), 'Should be one-hot'
 
+    # Assert that test and train do not have overlap.
     dx_train = [' '.join(xx) for xx in xtable.decode(X_train)]
     dx_test = [' '.join(xx) for xx in xtable.decode(X_test)]
     x = dx_train + dx_test
-    assert len(x) == len(set(x)), 'should be no overlap between test and train'
+    assert len(x) == len(set(x)), 'Should be no overlap between test and train'
 
+    # Preview random samples of data.
     assert X_train.shape[0] == y_train.shape[0]
     rand_samples = np.random.randint(X_train.shape[0], size=5)
     print([''.join(i) for i in xtable.decode(X_train[rand_samples])])
     print([''.join(i) for i in ytable.decode(y_train[rand_samples])])
 
+    # Assert test data is 0 when the split is 0.
     (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(test_size=0)
     assert X_test.size == 0 and y_test.size == 0, 'When test size is 0, test data must be empty.'
 
