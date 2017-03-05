@@ -38,16 +38,16 @@ def G2P(layers, tables, RNN=GRU, build=True):
     return model
 
 def test_fit_G2P():
-    #%% Test CMUDict.
+    # Test CMUDict.
     test_dataset_cmudict()
 
-    #%% Get CMUDict data.
+    # Get CMUDict data.
     (X_train, y_train), (_, _), (xtable, ytable) = get_cmudict(
         verbose=1,
         test_size=0.
     )
 
-    #%% Examine features and labels (check if they are aligned).
+    # Examine features and labels (check if they are aligned).
     assert X_train.shape[0] == y_train.shape[0]
     rand_samples = np.random.randint(X_train.shape[0], size=5)
     print([''.join(i) for i in xtable.decode(X_train[rand_samples])])
@@ -59,11 +59,11 @@ def test_fit_G2P():
     # Define model.
     model = G2P(3, (xtable, ytable), GRU, True)
 
-    #%% Summerize and plot model.
+    # Summerize and plot model.
     model.summary()
     plot(model)
 
-    #%% Fit model.
+    # Fit model.
     model.fit(X_train, y_train, batch_size=128, nb_epoch=20, verbose=1)
 
 if __name__ == "__main__":
