@@ -111,3 +111,6 @@ def test_dataset_cmudict():
 
     (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(test_size=0)
     assert X_test.size == 0 and y_test.size == 0, 'When test size is 0, test data must be empty.'
+
+if __name__ == "__main__":
+    test_dataset_cmudict()
