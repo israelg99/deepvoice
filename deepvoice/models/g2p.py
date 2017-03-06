@@ -19,7 +19,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
         tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
         recurrentshop: If to use the RecurrentShop extension, or to use vanilla Keras.
         RNN: Type of RNN cell, in case of vanilla Keras: GRU, LSTM.. in case of RecurrentShop: GRUCell, LSTMCell..
-        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only. If X and Y lengths are different, this must be False.
+        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only. If `X` and `y` lengths are different, this must be False.
         build: If to compile the model in Keras (the model will expect sprase labels).
 
     # Output
