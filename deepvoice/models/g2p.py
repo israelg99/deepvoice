@@ -13,7 +13,7 @@ from deepvoice.util.util import sparse_labels
 
 def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True):
     """
-    Grapheme-to-phoneme converter model in Keras.
+    Grapheme-to-phoneme converter; RNN encoder-decoder model.
     # Arguments
         layers: Amount of layers for the encoder and decoder.
         tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
@@ -24,6 +24,8 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
 
     # Output
         A Keras model.
+        Input:  `(word_length, nb_chars)` shaped one-hot vectors.
+        Output: `(word_length, nb_phons)` shaped one-hot vectors.
 
     # Example
         ```
@@ -36,11 +38,18 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
     """
     # TODO: Teacher-forcing.
     # TODO: Beam search.
+    # TODO: Decoder to output `phon_length` and not `word_length`.
+    # TODO: Decide to either only use the RecurrentShop extension or vanilla Keras.
 
-    RNN = GRU
-    if recurrentshop:
-        RNN = GRUCell
+    if RNN is None:
+        # Considering our RNN backend, pick an appropriate default RNN cell.
+        # Vanilla Keras = GRU
+        # RecurrentShop = GRUCell
+        RNN = GRU
+        if recurrentshop:
+            RNN = GRUCell
 
+    # Decode data into neat named variables.
     nb_chars = len(tables[0].chars)
     nb_phons = len(tables[1].chars)
     word_length = tables[0].maxlen
@@ -50,36 +59,55 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
 
     model.add(InputLayer((word_length, nb_chars)))
 
-    # TODO: Decide if the RecurrentShop extension is worth it.
     if recurrentshop:
         # Use the RecurrentShop extension.
+
+        # ENCODER:
+        # Multi-layer bidirectional RNN.
         encoder = RecurrentContainer(return_sequences=feed_seq)
         encoder.add(RNN(nb_phons, input_dim=nb_chars))
         for _ in range(layers-1):
             encoder.add(RNN(nb_phons))
 
+        model.add(Bidirectional(encoder))
+
+        # If we don't feed the decoder with sequential states from the encoder.
+        if not feed_seq:
+            # Duplicate the last state from the encoder word-length times.
+            model.add(RepeatVector(word_length))
+
+        # DECODER:
+        # Multi-layer unidirectional RNN.
         decoder = RecurrentContainer(return_sequences=True)
         decoder.add(RNN(nb_phons, input_dim=nb_phons*2))
         for _ in range(layers-1):
             decoder.add(RNN(nb_phons))
 
-        model.add(Bidirectional(encoder))
-        if not feed_seq:
-            model.add(RepeatVector(word_length))
         model.add(decoder)
     else:
         # Use vanilla Keras.
+
+        # ENCODER:
+        # Multi-layer bidirectional RNN.
         for _ in range(layers-1):
             model.add(Bidirectional(RNN(nb_phons, return_sequences=True, consume_less='gpu')))
         model.add(Bidirectional(RNN(nb_phons, return_sequences=feed_seq, consume_less='gpu')))
 
+        # If we don't feed the decoder with sequential states from the encoder.
         if not feed_seq:
+            # Duplicate the last state from the encoder word-length times.
             model.add(RepeatVector(word_length))
 
+        # DECODER:
+        # Multi-layer unidirectional RNN.
         for _ in range(layers):
             model.add(RNN(nb_phons, return_sequences=True, consume_less='gpu'))
 
+    # Add a dense layer at each timestep.
+    # It will result in `(timesteps, number_of_phonemes)` shaped output values.
     model.add(TimeDistributed(Dense(nb_phons)))
+
+    # Softmax to result in `(timesteps, number_of_phonemes)` shaped output probabilities.
     model.add(Activation('softmax'))
 
     if build:
@@ -114,7 +142,7 @@ def test_fit_G2P():
         model.fit(X_train, y_train, batch_size=1024, nb_epoch=1, verbose=1)
 
     test_recurrentshop(True) # Test model with RecurrentShop.
-    test_recurrentshop(False) # Test model with vanilla keras.
+    test_recurrentshop(False) # Test model with vanilla Keras.
 
 if __name__ == "__main__":
     test_fit_G2P()
