@@ -11,7 +11,7 @@ from recurrentshop.cells import GRUCell
 from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
 
-def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=False, build=True):
+def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True):
     # TODO: Teacher-forcing.
     # TODO: Beam search.
 
