@@ -19,7 +19,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
         tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
         recurrentshop: If to use the RecurrentShop extension, or to use vanilla Keras.
         RNN: Type of RNN cell, in case of vanilla Keras: GRU, LSTM.. in case of RecurrentShop: GRUCell, LSTMCell..
-        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only.
+        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only. If X and Y lengths are different, this must be False.
         build: If to compile the model in Keras (the model will expect sprase labels).
 
     # Output
@@ -38,7 +38,6 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
     """
     # TODO: Teacher-forcing.
     # TODO: Beam search.
-    # TODO: Decoder to output `phon_length` and not `word_length`.
     # TODO: Decide to either only use the RecurrentShop extension or vanilla Keras.
 
     if RNN is None:
@@ -74,7 +73,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
         # If we don't feed the decoder with sequential states from the encoder.
         if not feed_seq:
             # Duplicate the last state from the encoder word-length times.
-            model.add(RepeatVector(word_length))
+            model.add(RepeatVector(phon_length))
 
         # DECODER:
         # Multi-layer unidirectional RNN.
@@ -96,7 +95,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
         # If we don't feed the decoder with sequential states from the encoder.
         if not feed_seq:
             # Duplicate the last state from the encoder word-length times.
-            model.add(RepeatVector(word_length))
+            model.add(RepeatVector(phon_length))
 
         # DECODER:
         # Multi-layer unidirectional RNN.
