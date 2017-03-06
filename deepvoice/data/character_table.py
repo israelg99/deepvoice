@@ -2,7 +2,7 @@ import numpy as np
 import itertools
 import re
 
-# based on https://github.com/fchollet/keras/blob/master/examples/addition_rnn.py
+# Based on https://github.com/fchollet/keras/blob/master/examples/addition_rnn.py
 class CharacterTable(object):
     '''
     Given a set of characters:
