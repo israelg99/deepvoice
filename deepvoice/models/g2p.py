@@ -12,6 +12,28 @@ from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
 
 def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True):
+    """
+    Grapheme-to-phoneme converter model in Keras.
+    # Arguments
+        layers: Amount of layers for the encoder and decoder.
+        tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
+        recurrentshop: If to use the RecurrentShop extension, or to use vanilla Keras.
+        RNN: Type of RNN cell, in case of vanilla Keras: GRU, LSTM.. in case of RecurrentShop: GRUCell, LSTMCell..
+        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only.
+        build: If to compile the model in Keras (the model will expect sprase labels).
+
+    # Output
+        A Keras model.
+
+    # Example
+        ```
+        (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict()
+        y_train = sparse_labels(y_train)
+
+        model = G2P(3, (xtable, ytable), recurrentshop=True)
+        model.fit(X_train, y_train, batch_size=64, nb_epoch=20)
+        ```
+    """
     # TODO: Teacher-forcing.
     # TODO: Beam search.
 
