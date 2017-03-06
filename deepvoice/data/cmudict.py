@@ -10,28 +10,30 @@ from deepvoice.data.character_table import CharacterTable
 def get_cmudict(origin='https://raw.githubusercontent.com/cmusphinx/cmudict/master/cmudict.dict', test_size=0.33, verbose=False, maxlen_x=None, maxlen_y=None, blacklist='().0123456789', max_phonemes=np.inf, max_chars=np.inf, seed=42):
     """
     Process CMU pronounciation dictionary as one-hot encoded grapheme and phoneme data
+    # Arguments
+        seed: Random seed for data split and shuffle
+        test_size: Fraction of data to set aside for testing, 0 will return empty test data.
+        verbose: Print messages about data processing
+        maxlen_x: Crop and pad grapheme sequences to this length
+        maxlen_y: Crop and pad phoneme sequences to this length
+        max_phonemes: Restrict data to this <=max_phonemes
+        max_chars: Restrict data to this <=max_charectors
+        blacklist: Remove words with these charectors e.g. HOUSE(2) for the second varient of house
     # Output
         (X_train, y_train): One-hot encoded graphemes and phonemes
         (X_test, y_test): Test data
         (xtable, ytable): Charecter en/decoding tables
-    # Arguments
-        seed: random seed for data split and shuffle
-        test_size: fraction of data to set aside for testing, 0 will return empty test data.
-        verbose: print messages about data processing
-        maxlen_x: crop and pad grapheme sequences to this length
-        maxlen_y: crop and pad phoneme sequences to this length
-        max_phonemes: restrict data to this <=max_phonemes
-        max_chars: restrict data to this <=max_charectors
-        blacklist: remove words with these charectors e.g. HOUSE(2) for the second varient of house
     # Example
         ```
         (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict(
             verbose=1,
-            test_size=0.
+            test_size=0
         )
 
-        [''.join(i) for i in xtable.decode(X_train[:5])]
-        [''.join(i) for i in ytable.decode(y_train[:5])]
+        # Preview 5 random samples of data.
+        rand_samples = np.random.randint(X_train.shape[0], size=5)
+        [''.join(i) for i in xtable.decode(X_train[rand_samples])]
+        [''.join(i) for i in ytable.decode(y_train[rand_samples])]
         ```
     """
 
