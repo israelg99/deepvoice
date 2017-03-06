@@ -72,7 +72,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
 
         # If we don't feed the decoder with sequential states from the encoder.
         if not feed_seq:
-            # Duplicate the last state from the encoder word-length times.
+            # Duplicate the last state from the encoder phoneme-length times.
             model.add(RepeatVector(phon_length))
 
         # DECODER:
@@ -94,7 +94,7 @@ def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True
 
         # If we don't feed the decoder with sequential states from the encoder.
         if not feed_seq:
-            # Duplicate the last state from the encoder word-length times.
+            # Duplicate the last state from the encoder phoneme-length times.
             model.add(RepeatVector(phon_length))
 
         # DECODER:
