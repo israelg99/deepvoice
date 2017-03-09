@@ -1,118 +1,101 @@
 import numpy as np
 
-from keras.models import Sequential
-from keras.layers import Activation, TimeDistributed, Bidirectional, LSTM, GRU, Dense, InputLayer, RepeatVector
+from keras.models import Sequential, Model
+from keras.layers import Activation, TimeDistributed, Bidirectional, LSTM, GRU, Dense, InputLayer, RepeatVector, Input
 from keras.optimizers import Nadam
 from keras.utils.visualize_util import plot
 
 from recurrentshop.engine import RecurrentContainer
-from recurrentshop.cells import GRUCell
+from recurrentshop.cells import GRUCell, LSTMCell
 
 from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
 
-def G2P(layers, tables, recurrentshop=False, RNN=None, feed_seq=True, build=True):
+def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=None, build=True):
     """
-    Grapheme-to-phoneme converter; RNN encoder-decoder model.
+    Grapheme-to-phoneme converter; RNN GRU encoder-decoder model.
     # Arguments
         layers: Amount of layers for the encoder and decoder.
+        batch: The batch size.
+        chars: The amount of characters (English has 29).
+        phons: The amount of phonemes (CMUDict uses 75).
+        word_len: The length of the input word.
+        phon_len: The length of the output phoneme.
         tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
-        recurrentshop: If to use the RecurrentShop extension, or to use vanilla Keras.
-        RNN: Type of RNN cell, in case of vanilla Keras: GRU, LSTM.. in case of RecurrentShop: GRUCell, LSTMCell..
-        feed_seq: If to feed the decoder the sequence of states from the encoder, or to feed the latest encoder state only. If `X` and `y` lengths are different, this must be False.
         build: If to compile the model in Keras (the model will expect sprase labels).
 
     # Output
         A Keras model.
-        Input:  `(word_length, nb_chars)` shaped one-hot vectors.
-        Output: `(word_length, nb_phons)` shaped one-hot vectors.
+        Input:  `(word_length, chars)` shaped one-hot vectors.
+        Output: `(word_length, phons)` shaped one-hot vectors.
 
     # Example
         ```
         (X_train, y_train), (X_test, y_test), (xtable, ytable) = get_cmudict()
         y_train = sparse_labels(y_train)
 
-        model = G2P(3, (xtable, ytable), recurrentshop=True)
-        model.fit(X_train, y_train, batch_size=64, nb_epoch=20)
+        model = G2P(layers=3, batch=1024, tables=(xtable, ytable))
+        model.fit(X_train, y_train, batch_size=1024, nb_epoch=20)
         ```
     """
     # TODO: Teacher-forcing.
     # TODO: Beam search.
-    # TODO: Decide to either only use the RecurrentShop extension or vanilla Keras.
-
-    if RNN is None:
-        # Considering our RNN backend, pick an appropriate default RNN cell.
-        # Vanilla Keras = GRU
-        # RecurrentShop = GRUCell
-        RNN = GRU
-        if recurrentshop:
-            RNN = GRUCell
 
     # Decode data into neat named variables.
-    nb_chars = len(tables[0].chars)
-    nb_phons = len(tables[1].chars)
-    word_length = tables[0].maxlen
-    phon_length = tables[1].maxlen
+    if tables is not None:
+        chars = len(tables[0].chars)
+        phons = len(tables[1].chars)
+        word_length = tables[0].maxlen
+        phon_length = tables[1].maxlen
 
-    model = Sequential()
+    # Define our model's input.
+    input_seq = Input(batch_shape=(batch, word_length, chars))
+    input_seq._keras_history[0].supports_masking = True
 
-    model.add(InputLayer((word_length, nb_chars)))
+    # ENCODER:
+    # Multi-layer bidirectional GRU.
+    encoder = RecurrentContainer(input_length=word_length)
+    for _ in range(layers):
+        encoder.add(GRUCell(phons, batch_input_shape=(batch, chars)))
+    encoder.build(input_seq)
+    encoder.reset_states()
 
-    if recurrentshop:
-        # Use the RecurrentShop extension.
+    # Add the encoder.
+    encoded = encoder(input_seq)
 
-        # ENCODER:
-        # Multi-layer bidirectional RNN.
-        encoder = RecurrentContainer(return_sequences=feed_seq)
-        encoder.add(RNN(nb_phons, input_dim=nb_chars))
-        for _ in range(layers-1):
-            encoder.add(RNN(nb_phons))
+    # The decoder's input is a vector of length `phon_length` range.
+    decoder_input = Dense(phons)(encoded)
 
-        model.add(Bidirectional(encoder))
+    # DECODER:
+    # Multi-layer unidirectional GRU.
+    decoder = RecurrentContainer(output_length=phon_length, decode=True)
+    for i in range(layers):
+        decoder.add(GRUCell(phons, batch_input_shape=(batch, phons)))
+    decoder.build(input_seq)
+    decoder.states = encoder.states
 
-        # If we don't feed the decoder with sequential states from the encoder.
-        if not feed_seq:
-            # Duplicate the last state from the encoder phoneme-length times.
-            model.add(RepeatVector(phon_length))
+    # Apply the decoder into the graph.
+    # Which looks like this: Input->Encoder->Decoder.
+    # Initialize the decoder's states with the encoder's final states.
+    decoder = decoder(decoder_input)
 
-        # DECODER:
-        # Multi-layer unidirectional RNN.
-        decoder = RecurrentContainer(return_sequences=True)
-        decoder.add(RNN(nb_phons, input_dim=nb_phons*2))
-        for _ in range(layers-1):
-            decoder.add(RNN(nb_phons))
+    # Add a fully-connected dense layer in each timestep to decode the output phoneme for that timestep.
+    # The output is of shape: `(timesteps, number_of_phonemes)` of values (not probabilities).
+    # The graph looks like this: Input->Encoder->Decoder->TimeDistributedDense.
+    output_dense = TimeDistributed(Dense(phons))(decoder)
 
-        model.add(decoder)
-    else:
-        # Use vanilla Keras.
+    # Softmax to output probabilities.
+    # Output is of shape: `(timesteps, number_of_phonemes)` probabilities.
+    # The graph looks like this: Input->Encoder->Decoder->TimeDistributedDense->Softmax.
+    output_softmax = Activation('softmax')(output_dense)
 
-        # ENCODER:
-        # Multi-layer bidirectional RNN.
-        for _ in range(layers-1):
-            model.add(Bidirectional(RNN(nb_phons, return_sequences=True, consume_less='gpu')))
-        model.add(Bidirectional(RNN(nb_phons, return_sequences=feed_seq, consume_less='gpu')))
-
-        # If we don't feed the decoder with sequential states from the encoder.
-        if not feed_seq:
-            # Duplicate the last state from the encoder phoneme-length times.
-            model.add(RepeatVector(phon_length))
-
-        # DECODER:
-        # Multi-layer unidirectional RNN.
-        for _ in range(layers):
-            model.add(RNN(nb_phons, return_sequences=True, consume_less='gpu'))
-
-    # Add a dense layer at each timestep.
-    # It will result in `(timesteps, number_of_phonemes)` shaped output values.
-    model.add(TimeDistributed(Dense(nb_phons)))
-
-    # Softmax to result in `(timesteps, number_of_phonemes)` shaped output probabilities.
-    model.add(Activation('softmax'))
+    # Finalize the model.
+    model = Model(input_seq, output_softmax)
 
     if build:
         model.compile(loss='sparse_categorical_crossentropy',
-                    optimizer=Nadam(),
-                    metrics=['accuracy'])
+                      optimizer=Nadam(),
+                      metrics=['accuracy'])
 
     return model
 
@@ -129,19 +112,16 @@ def test_fit_G2P():
     # Sparse labels.
     y_train = sparse_labels(y_train)
 
-    def test_recurrentshop(recurrentshop):
-        # Define model.
-        model = G2P(3, (xtable, ytable), recurrentshop=recurrentshop)
+    # Define model.
+    batch = 1024
+    model = G2P(layers=3, batch=batch, tables=(xtable, ytable))
 
-        # Summerize and plot model.
-        model.summary()
-        plot(model)
+    # Summerize and plot model.
+    model.summary()
+    plot(model)
 
-        # Fit model.
-        model.fit(X_train, y_train, batch_size=1024, nb_epoch=1, verbose=1)
-
-    test_recurrentshop(True) # Test model with RecurrentShop.
-    test_recurrentshop(False) # Test model with vanilla Keras.
+    # Fit model.
+    model.fit(X_train[:X_train.shape[0]//1024*1024], y_train[:y_train.shape[0]//1024*1024], batch_size=batch, nb_epoch=1, verbose=1)
 
 if __name__ == "__main__":
     test_fit_G2P()
