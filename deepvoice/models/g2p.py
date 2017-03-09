@@ -126,7 +126,8 @@ def test_fit_G2P():
     plot(model)
 
     # Fit model.
-    model.fit(X_train[:X_train.shape[0]//1024*1024], y_train[:y_train.shape[0]//1024*1024], batch_size=batch, nb_epoch=1, verbose=1)
+    # Crop the training data so it fits the batch size.
+    model.fit(X_train[:X_train.shape[0]//batch*batch], y_train[:y_train.shape[0]//batch*batch], batch_size=batch, nb_epoch=1, verbose=1)
 
 if __name__ == "__main__":
     test_fit_G2P()
