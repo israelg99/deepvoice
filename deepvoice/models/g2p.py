@@ -57,6 +57,8 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     encoder = RecurrentContainer(input_length=word_length)
     for _ in range(layers):
         encoder.add(GRUCell(phons, batch_input_shape=(batch, chars)))
+
+    # Initialize the encoder's states.
     encoder.build(input_seq)
     encoder.reset_states()
 
@@ -71,6 +73,9 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     decoder = RecurrentContainer(output_length=phon_length, decode=True)
     for i in range(layers):
         decoder.add(GRUCell(phons, batch_input_shape=(batch, phons)))
+
+    # Initialize the decoder's layer states with the corresponding encoder's final layer states.
+    # Such that decoder.layers[i].state = encoder.layers[i].state.
     decoder.build(input_seq)
     decoder.states = encoder.states
 
