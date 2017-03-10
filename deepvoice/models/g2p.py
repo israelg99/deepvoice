@@ -63,7 +63,7 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     encoder.reset_states()
 
     # Add the encoder.
-    encoded = encoder(input_seq)
+    encoded = Bidirectional(encoder)(input_seq)
 
     # The decoder's input is a vector of length `phon_length`.
     decoder_input = Dense(phons)(encoded)
