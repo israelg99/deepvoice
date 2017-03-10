@@ -19,8 +19,8 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         batch: The batch size.
         chars: The amount of characters (English has 29).
         phons: The amount of phonemes (CMUDict uses 75).
-        word_len: The length of the input word.
-        phon_len: The length of the output phoneme.
+        word_len: The length of the input word (CMUDict uses 28).
+        phon_len: The length of the output phoneme (CMUDict uses 28).
         tables: Charecter en/decoding tables, can be retrieved by `get_cmudict()`.
         build: If to compile the model in Keras (the model will expect sprase labels).
 
@@ -75,6 +75,7 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         decoder.add(GRUCell(phons, batch_input_shape=(batch, phons)))
 
     # Initialize the decoder's layer states with the corresponding encoder's final layer states.
+    # The states are symbollic tensors.
     # Such that decoder.layers[i].state = encoder.layers[i].state.
     decoder.build(input_seq)
     decoder.states = encoder.states
