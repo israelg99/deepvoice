@@ -38,8 +38,6 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         model.fit(X_train, y_train, batch_size=1024, nb_epoch=20)
         ```
     """
-    # TODO: Teacher-forcing.
-    # TODO: Beam search.
 
     # Decode data into neat named variables.
     if tables is not None:
@@ -50,54 +48,8 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
 
     # Define our model's input.
     input_seq = Input(batch_shape=(batch, word_length, chars))
-    input_seq._keras_history[0].supports_masking = True
 
-    # ENCODER:
-    # Multi-layer bidirectional GRU.
-    encoder = RecurrentContainer(input_length=word_length)
-    for _ in range(layers):
-        encoder.add(GRUCell(phons, batch_input_shape=(batch, chars)))
 
-    # Initialize the encoder's states.
-    encoder.build(input_seq)
-    encoder.reset_states()
-
-    # Add the encoder.
-    encoded = Bidirectional(encoder)(input_seq)
-
-    # The decoder's initial input is a vector of length `phon_length`.
-    decoder_input = Dense(phons)(encoded)
-
-    # DECODER:
-    # Multi-layer unidirectional GRU.
-    decoder = RecurrentContainer(readout='readout_only', output_length=phon_length, decode=True)
-    for i in range(layers):
-        decoder.add(GRUCell(phons, batch_input_shape=(batch, phons)))
-
-    # Initialize the decoder's layer states with the corresponding encoder's final layer states.
-    # The states are symbollic tensors.
-    # Such that decoder.layers[i].state = encoder.layers[i].state.
-    decoder.build(decoder_input)
-    decoder.states = encoder.states
-
-    # Teacher forcing.
-    # Add a new input entry for the ground truth values.
-    ground_truth = Input(batch_shape=(batch, phon_len, phons))
-    ground_truth._keras_history[0].supports_masking = True
-
-    # Apply the decoder into the graph.
-    # Which looks like this: Input->Encoder->Decoder.
-    decoded = decoder({'input': decoder_input, 'ground_truth': ground_truth, 'initial_readout': decoder_input})
-
-    # Add a fully-connected dense layer in each timestep to decode the output phoneme for that timestep.
-    # The output is of shape: `(timesteps, number_of_phonemes)` of values (not probabilities).
-    # The graph looks like this: Input->Encoder->Decoder->TimeDistributedDense.
-    output_dense = TimeDistributed(Dense(phons))(decoded)
-
-    # Softmax to output probabilities.
-    # Output is of shape: `(timesteps, number_of_phonemes)` probabilities.
-    # The graph looks like this: Input->Encoder->Decoder->TimeDistributedDense->Softmax.
-    output_softmax = Activation('softmax')(output_dense)
 
     # Finalize the model.
     model = Model([input_seq, ground_truth], output_softmax)
