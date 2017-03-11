@@ -65,30 +65,34 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     # Add the encoder.
     encoded = Bidirectional(encoder)(input_seq)
 
-    # The decoder's input is a vector of length `phon_length`.
+    # The decoder's initial input is a vector of length `phon_length`.
     decoder_input = Dense(phons)(encoded)
 
     # DECODER:
     # Multi-layer unidirectional GRU.
-    decoder = RecurrentContainer(output_length=phon_length, decode=True)
+    decoder = RecurrentContainer(readout='readout_only', output_length=phon_length, decode=True)
     for i in range(layers):
         decoder.add(GRUCell(phons, batch_input_shape=(batch, phons)))
 
     # Initialize the decoder's layer states with the corresponding encoder's final layer states.
     # The states are symbollic tensors.
     # Such that decoder.layers[i].state = encoder.layers[i].state.
-    decoder.build(input_seq)
+    decoder.build(decoder_input)
     decoder.states = encoder.states
+
+    # Teacher forcing.
+    # Add a new input entry for the ground truth values.
+    ground_truth = Input(batch_shape=(batch, phon_len, phons))
+    ground_truth._keras_history[0].supports_masking = True
 
     # Apply the decoder into the graph.
     # Which looks like this: Input->Encoder->Decoder.
-    # Initialize the decoder's states with the encoder's final states.
-    decoder = decoder(decoder_input)
+    decoded = decoder({'input': decoder_input, 'ground_truth': ground_truth, 'initial_readout': decoder_input})
 
     # Add a fully-connected dense layer in each timestep to decode the output phoneme for that timestep.
     # The output is of shape: `(timesteps, number_of_phonemes)` of values (not probabilities).
     # The graph looks like this: Input->Encoder->Decoder->TimeDistributedDense.
-    output_dense = TimeDistributed(Dense(phons))(decoder)
+    output_dense = TimeDistributed(Dense(phons))(decoded)
 
     # Softmax to output probabilities.
     # Output is of shape: `(timesteps, number_of_phonemes)` probabilities.
@@ -96,7 +100,7 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     output_softmax = Activation('softmax')(output_dense)
 
     # Finalize the model.
-    model = Model(input_seq, output_softmax)
+    model = Model([input_seq, ground_truth], output_softmax)
 
     if build:
         model.compile(loss='sparse_categorical_crossentropy',
@@ -116,7 +120,7 @@ def test_fit_G2P():
     )
 
     # Sparse labels.
-    y_train = sparse_labels(y_train)
+    sparse_y_train = sparse_labels(y_train)
 
     # Define model.
     batch = 1024
@@ -126,9 +130,14 @@ def test_fit_G2P():
     model.summary()
     plot(model)
 
-    # Fit model.
     # Crop the training data so it fits the batch size.
-    model.fit(X_train[:X_train.shape[0]//batch*batch], y_train[:y_train.shape[0]//batch*batch], batch_size=batch, nb_epoch=1, verbose=1)
+    X_batched = X_train[:X_train.shape[0]//batch*batch]
+    y_batched = y_train[:y_train.shape[0]//batch*batch]
+
+    y_sparse_batched = sparse_y_train[:sparse_y_train.shape[0]//batch*batch]
+
+    # Fit the model.
+    model.fit([X_batched, y_batched], y_sparse_batched, batch_size=batch, nb_epoch=1, verbose=1)
 
 if __name__ == "__main__":
     test_fit_G2P()
