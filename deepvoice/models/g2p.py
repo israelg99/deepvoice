@@ -3,10 +3,7 @@ import numpy as np
 from keras.models import Sequential, Model
 from keras.layers import Activation, TimeDistributed, Bidirectional, LSTM, GRU, Dense, InputLayer, RepeatVector, Input
 from keras.optimizers import Nadam
-from keras.utils.visualize_util import plot
-
-from recurrentshop.engine import RecurrentContainer
-from recurrentshop.cells import GRUCell, LSTMCell
+from keras.utils.vis_utils import plot_model
 
 from deepvoice.data.cmudict import get_cmudict, test_dataset_cmudict
 from deepvoice.util.util import sparse_labels
@@ -38,6 +35,13 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         model.fit(X_train, y_train, batch_size=1024, nb_epoch=20)
         ```
     """
+    # V TODO: Engineer encoder model.
+    # V TODO: Engineer decoder model.
+    # V TODO: Get the state of an encoder's layer symbolically.
+    # V TODO: Initialize a decoder layer state with the corresponding encoder layer state.
+    #   TODO: Engineer the initial decoder input token (the output of encoder?).
+    #   TODO: Feed the output of the decoder at t-1 as input at t.
+    #   TODO: Engineer teacher forcing.
 
     # Decode data into neat named variables.
     if tables is not None:
@@ -47,19 +51,46 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         phon_length = tables[1].maxlen
 
     # Define our model's input.
-    input_seq = Input(batch_shape=(batch, word_length, chars))
+    input_seq = Input((word_length, chars))
 
+    ''' ENCODER '''
+    # Multi-layer bidirectional GRU.
+    # Keep an array of the encoder layers to later extract their state tenors (symbolically) to initialize the decoder layers.
+    # Define and add the encoders into the graph.
+    encoders = []
+    encoders.append(Bidirectional(GRU(phons, return_sequences=True, implementation=2), 'sum'))
+    encoded = encoders[-1](input_seq)
+    for _ in range(layers-1):
+        encoders.append(Bidirectional(GRU(phons, return_sequences=True, implementation=2), 'sum'))
+        encoded = encoders[-1](encoded)
 
+    # Teacher forcing.
+    # ground_truth = Input((phon_len, phons))
 
-    # Finalize the model.
-    model = Model([input_seq, ground_truth], output_softmax)
+    ''' DECODER '''
+    # Multi-layer unidirectional GRU.
+    # Initialize the decoder's layer states with the corresponding layer states from the encoder.
+    # Define and add the decoders into the graph.
+    decoded = GRU(phons, return_sequences=True, implementation=2)(encoded, encoders[0].forward_layer.state_spec)
+    for layer in range(layers-1):
+        decoded = GRU(phons, return_sequences=True, implementation=2)(decoded, encoders[layer].forward_layer.state_spec)
+
+    # Add a dense layer at each timestep to determine the output phonemes.
+    # It will result in `(timesteps, number_of_phonemes)` shaped output values.
+    output_densed = TimeDistributed(Dense(phons))(decoded)
+
+    # Softmax to result in `(timesteps, number_of_phonemes)` shaped output probabilities.
+    output_softmax = Activation('softmax')(output_densed)
+
+    # Finalize the G2P model.
+    g2p = Model(input_seq, output_softmax)
 
     if build:
-        model.compile(loss='sparse_categorical_crossentropy',
+        g2p.compile(loss='sparse_categorical_crossentropy',
                       optimizer=Nadam(),
                       metrics=['accuracy'])
 
-    return model
+    return g2p
 
 def test_fit_G2P():
     # Test CMUDict.
@@ -74,13 +105,13 @@ def test_fit_G2P():
     # Sparse labels.
     sparse_y_train = sparse_labels(y_train)
 
-    # Define model.
+    # Define the G2P model.
     batch = 1024
-    model = G2P(layers=3, batch=batch, tables=(xtable, ytable))
+    g2p = G2P(layers=3, batch=batch, tables=(xtable, ytable))
 
     # Summerize and plot model.
-    model.summary()
-    plot(model)
+    g2p.summary()
+    plot_model(g2p)
 
     # Crop the training data so it fits the batch size.
     X_batched = X_train[:X_train.shape[0]//batch*batch]
@@ -88,8 +119,8 @@ def test_fit_G2P():
 
     y_sparse_batched = sparse_y_train[:sparse_y_train.shape[0]//batch*batch]
 
-    # Fit the model.
-    model.fit([X_batched, y_batched], y_sparse_batched, batch_size=batch, nb_epoch=1, verbose=1)
+    # Fit the G2P model.
+    g2p.fit(X_batched, y_sparse_batched, batch_size=batch, epochs=1, verbose=1)
 
 if __name__ == "__main__":
     test_fit_G2P()
