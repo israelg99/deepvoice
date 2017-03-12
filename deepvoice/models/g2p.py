@@ -39,8 +39,8 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     # V TODO: Engineer decoder model.
     # V TODO: Get the state of an encoder's layer symbolically.
     # V TODO: Initialize a decoder layer state with the corresponding encoder layer state.
-    #   TODO: Engineer the initial decoder input token (the output of encoder?).
-    #   TODO: Feed the output of the decoder at t-1 as input at t.
+    # V TODO: Engineer the initial decoder input token (the output of encoder?).
+    # V TODO: Feed the output of the decoder at t-1 as input at t.
     #   TODO: Engineer teacher forcing.
 
     # Decode data into neat named variables.
