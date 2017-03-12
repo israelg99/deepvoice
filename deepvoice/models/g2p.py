@@ -60,9 +60,17 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     encoders = []
     encoders.append(Bidirectional(GRU(phons, return_sequences=True, implementation=2), 'sum'))
     encoded = encoders[-1](input_seq)
-    for _ in range(layers-1):
+    for _ in range(layers-2):
         encoders.append(Bidirectional(GRU(phons, return_sequences=True, implementation=2), 'sum'))
         encoded = encoders[-1](encoded)
+    encoders.append(Bidirectional(GRU(phons, return_sequences=False, implementation=2), 'sum'))
+    encoded = encoders[-1](encoded)
+
+    # Assign the encoder's output as the decoder's initial input.
+    # The encoder's output is of shape: `(phones)`.
+    # The decoder expects input of shape: `(timestep, phones)`.
+    # Use RV to add one timstep dimension to the encoder's output shape.
+    input_decoder = RepeatVector(1)(encoded)
 
     # Teacher forcing.
     # ground_truth = Input((phon_len, phons))
@@ -71,7 +79,7 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
     # Multi-layer unidirectional GRU.
     # Initialize the decoder's layer states with the corresponding layer states from the encoder.
     # Define and add the decoders into the graph.
-    decoded = GRU(phons, return_sequences=True, implementation=2)(encoded, encoders[0].forward_layer.state_spec)
+    decoded = GRU(phons, return_sequences=True, implementation=2, unroll=True, output_length=phon_length)(input_decoder, encoders[0].forward_layer.state_spec)
     for layer in range(layers-1):
         decoded = GRU(phons, return_sequences=True, implementation=2)(decoded, encoders[layer].forward_layer.state_spec)
 
