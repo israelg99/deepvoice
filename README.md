@@ -3,6 +3,10 @@
 [![Join the chat at https://gitter.im/deep-voice/Lobby](https://badges.gitter.im/deep-voice/Lobby.svg)](https://gitter.im/deep-voice/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)  
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
+This repository depends on [Keras-2](https://github.com/fchollet/keras/tree/keras-2).  
+To install: `pip3 install git+https://github.com/fchollet/keras.git@keras-2`  
+**This will override your previously installed Keras version.**  
+
 Deep Voice is a text-to-speech system based entirely on deep neural networks.
 
 Deep Voice comprises five models:
