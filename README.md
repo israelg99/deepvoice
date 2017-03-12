@@ -4,7 +4,7 @@
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
 This repository depends [on my Keras-2 branch](https://github.com/israelg99/keras/tree/rnn_decode.keras2) until it is merged with the official [Keras-2](https://github.com/fchollet/keras/tree/keras-2) repository.  
-To install: `pip3 install git+https://github.com/israelg99/keras/tree/rnn_decode.keras2`  
+To install: `pip3 install git+https://github.com/israelg99/keras.git@rnn_decode.keras2`  
 **This will override your previously installed Keras version.**  
 
 Deep Voice is a text-to-speech system based entirely on deep neural networks.
