@@ -32,7 +32,7 @@ def G2P(layers, batch=32, chars=29, phons=75, word_len=28, phon_len=28, tables=N
         y_train = sparse_labels(y_train)
 
         model = G2P(layers=3, batch=1024, tables=(xtable, ytable))
-        model.fit(X_train, y_train, batch_size=1024, nb_epoch=20)
+        model.fit(X_train, y_train, batch_size=1024, epochs=20)
         ```
     """
     # V TODO: Engineer encoder model.
