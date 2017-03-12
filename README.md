@@ -3,7 +3,7 @@
 [![Join the chat at https://gitter.im/deep-voice/Lobby](https://badges.gitter.im/deep-voice/Lobby.svg)](https://gitter.im/deep-voice/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)  
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
-This repository depends [on my Keras-2 branch](https://github.com/israelg99/keras/tree/rnn_decode.keras2)(adds RNN decoding feature) until it is merged with the official [Keras-2](https://github.com/fchollet/keras/tree/keras-2) repository.
+This repository depends [on my Keras-2 branch](https://github.com/israelg99/keras/tree/rnn_decode.keras2) until it is merged with the official [Keras-2](https://github.com/fchollet/keras/tree/keras-2) repository.  
 To install: `pip3 install git+https://github.com/israelg99/keras/tree/rnn_decode.keras2`  
 **This will override your previously installed Keras version.**  
 
