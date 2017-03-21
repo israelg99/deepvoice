@@ -3,7 +3,7 @@
 [![Join the chat at https://gitter.im/deep-voice/Lobby](https://badges.gitter.im/deep-voice/Lobby.svg)](https://gitter.im/deep-voice/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)  
 *Based on the [Deep Voice paper](https://arxiv.org/pdf/1702.07825.pdf).*
 
-This repository depends [on my Keras fork](https://github.com/israelg99/keras/tree/master) until it is merged with the official [Keras-2](https://github.com/fchollet/keras/tree/master) repository.  
+This repository depends [on my Keras fork](https://github.com/israelg99/keras/tree/master) until it is merged with the official [Keras](https://github.com/fchollet/keras/tree/master) repository.  
 To install: `pip3 install git+https://github.com/israelg99/keras.git`  
 **This will override your previously installed Keras version.**  
 
